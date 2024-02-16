@@ -1,0 +1,42 @@
+from mxc.client import MEXCClient
+import time
+
+# API Key and Secret
+api_key = 'your_api_key'
+api_secret = 'your_api_secret'
+
+# Initialize MEXC client
+client = MEXCClient(api_key, api_secret)
+
+# Define your selling strategy
+sell_percentage = 0.2  # Percentage of total asset to sell
+sell_price_increase = 2  # Multiplier for the selling price increase
+quantity = 0.1  # Total quantity of asset
+symbol = 'BTC_USDT'  # Symbol to trade (make sure it matches the symbol format for MEXC)
+
+# Get the initial price
+ticker = client.get_market_ticker(symbol=symbol)
+initial_price = float(ticker['data']['last'])
+
+# Calculate the target sell price
+target_sell_price = initial_price * sell_price_increase
+
+while True:
+    # Get current price
+    ticker = client.get_market_ticker(symbol=symbol)
+    current_price = float(ticker['data']['last'])
+
+    # Check if current price has reached the target sell price
+    if current_price >= target_sell_price:
+        # Calculate the quantity to sell
+        sell_quantity = quantity * sell_percentage
+        
+        # Place sell order
+        print(f"Selling {sell_quantity} {symbol} at {current_price}")
+        order = client.place_spot_market_order(symbol=symbol, side='SELL', amount=str(sell_quantity), order_type='LIMIT', price=str(current_price))
+        
+        # Calculate new target sell price for next sell
+        target_sell_price *= sell_price_increase
+
+    # Wait for a certain interval before checking again
+    time.sleep(60)  # Wait for 1 minute before checking again
