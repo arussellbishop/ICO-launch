@@ -1,0 +1,44 @@
+import requests
+import hashlib
+import hmac
+import time
+import pandas as pd
+import dontshare  # Importing your API keys from dontshare.py
+
+# Use dontshare.API_KEY and dontshare.API_SECRET instead of hardcoded values
+
+# Function to create a signature for authenticated requests
+def generate_signature(api_key, api_secret, params):
+    params['api_key'] = api_key
+    params['req_time'] = int(time.time() * 1000)
+    params_str = '&'.join([f'{k}={v}' for k, v in sorted(params.items())])
+    sign = hmac.new(api_secret.encode('utf-8'), params_str.encode('utf-8'), hashlib.sha256).hexdigest()
+    return sign
+
+# Function to make a GET request to MEXC API
+def make_request(endpoint, params=None):
+    url = f'https://www.mxc.com{endpoint}'
+    if params is None:
+        params = {}
+    response = requests.get(url, params=params)
+    return response.json()
+
+# Function to make an authenticated GET request to MEXC API
+def make_authenticated_request(endpoint, params=None):
+    if params is None:
+        params = {}
+    params['sign'] = generate_signature(dontshare.API_KEY, dontshare.API_SECRET, params)  # Using dontshare.API_KEY and dontshare.API_SECRET
+    response = requests.get(f'https://www.mxc.com{endpoint}', params=params)
+    return response.json()
+
+# Example: Get account balance
+def get_account_balance():
+    endpoint = '/open/api/v2/account/info'
+    response = make_authenticated_request(endpoint)
+    return response
+
+# Example usage
+if __name__ == '__main__':
+    account_balance = get_account_balance()
+    df_account_balance = pd.DataFrame(account_balance['data']['assets'])
+    print(df_account_balance)
